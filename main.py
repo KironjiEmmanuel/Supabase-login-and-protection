@@ -1,4 +1,5 @@
 import os
+import token
 from typing import Optional
 from dotenv import load_dotenv
 load_dotenv()
@@ -68,5 +69,14 @@ def protected_profile(authorization: Optional[str] = Header(None)):
         return JSONResponse(status_code=401, content={"error": "Access token required"})
 
     token = parts[1]
-    # Stage 3 will verify this token against Supabase
-    return {"message": "token extracted, not yet verified"}
+    try:
+        result = supabase.auth.get_user(token)
+    except AuthError:
+        return JSONResponse(status_code=401, content={"error": "Invalid or expired token"})
+
+    user = result.user
+    return {
+        "id": user.id,
+        "email": user.email,
+        "created_at": user.created_at.isoformat() if hasattr(user.created_at, "isoformat") else str(user.created_at)
+    }
