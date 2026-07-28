@@ -3,6 +3,7 @@ from typing import Optional
 from dotenv import load_dotenv
 load_dotenv()
 from fastapi import FastAPI
+from fastapi import Header
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from supabase import create_client, Client
@@ -53,3 +54,19 @@ def login(payload: AuthRequest):
         "access_token": result.session.access_token,
         "refresh_token": result.session.refresh_token
     })
+@app.get("/public/info")
+def public_info():
+    return {"message": "Welcome stranger! This info is public."}
+
+@app.get("/protected/profile")
+def protected_profile(authorization: Optional[str] = Header(None)):
+    if not authorization:
+        return JSONResponse(status_code=401, content={"error": "Access token required"})
+
+    parts = authorization.split(" ", 1)
+    if len(parts) != 2 or parts[0] != "Bearer" or not parts[1]:
+        return JSONResponse(status_code=401, content={"error": "Access token required"})
+
+    token = parts[1]
+    # Stage 3 will verify this token against Supabase
+    return {"message": "token extracted, not yet verified"}
